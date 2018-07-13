@@ -38,6 +38,8 @@ services:
             options:
                 max-file: "10"
                 max-size: "50m"
+        environment:
+            DEVICEAUTH_MAX_DEVICES_LIMIT_DEFAULT: 15
 
     mender-inventory:
         command: server --automigrate
@@ -67,7 +69,7 @@ services:
                 max-file: "10"
                 max-size: "50m"
         environment:
-            ALLOWED_HOSTS: my-gateway-dns-name
+            ALLOWED_HOSTS: mender.baseflow.app
 
     storage-proxy:
         ports:
@@ -80,7 +82,7 @@ services:
                     # available on, for instance if devices will access storage
                     # using https://s3.acme.org:9000, then set this to
                     # s3.acme.org
-                    - set-my-alias-here.com
+                    - s3.baseflow.app 
         environment:
 
             # use nginx syntax for rate limiting, see
@@ -101,15 +103,15 @@ services:
         environment:
             STORAGE_BACKEND_CERT: /etc/ssl/certs/storage-proxy.crt
             # access key, the same value as MINIO_ACCESS_KEY
-            DEPLOYMENTS_AWS_AUTH_KEY:
+            DEPLOYMENTS_AWS_AUTH_KEY: mender-deployments
             # secret, the same valie as MINIO_SECRET_KEY
-            DEPLOYMENTS_AWS_AUTH_SECRET:
+            DEPLOYMENTS_AWS_AUTH_SECRET: bai7Jahj4ieHohpu
 
             # deployments service uses signed URLs, hence it needs to access
             # storage-proxy using exactly the same name as devices will; if
             # devices will access storage using https://s3.acme.org:9000, then
             # set this to https://s3.acme.org:9000
-            DEPLOYMENTS_AWS_URI: https://set-my-alias-here.com
+            DEPLOYMENTS_AWS_URI: https://s3.baseflow.app
         logging:
             options:
                 max-file: "10"
@@ -118,9 +120,9 @@ services:
     minio:
         environment:
             # access key
-            MINIO_ACCESS_KEY:
+            MINIO_ACCESS_KEY: mender-deployments
             # secret
-            MINIO_SECRET_KEY:
+            MINIO_SECRET_KEY: bai7Jahj4ieHohpu
         volumes:
             # mounts a docker volume named `mender-artifacts` as /export directory
             - mender-artifacts:/export:rw
