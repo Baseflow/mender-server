@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+../verify-docker-versions
+
+exec docker-compose \
+     -p menderproduction \
+     -f ../docker-compose.yml \
+     -f ../docker-compose.storage.minio.yml \
+     -f ./prod.yml \
+     "$@"
