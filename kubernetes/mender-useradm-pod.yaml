@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mender-useradm
+  name: mender-useradm
+spec:
+  containers:
+  - image: mendersoftware/useradm:master
+    name: mender-useradm
+    resources: {}
+  restartPolicy: OnFailure
+status: {}

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mender-api-gateway
+  name: mender-api-gateway
+spec:
+  containers:
+  - image: mendersoftware/api-gateway:master
+    name: mender-api-gateway
+    resources: {}
+  restartPolicy: OnFailure
+status: {}

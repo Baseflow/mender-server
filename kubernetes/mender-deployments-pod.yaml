@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mender-deployments
+  name: mender-deployments
+spec:
+  containers:
+  - image: mendersoftware/deployments:master
+    name: mender-deployments
+    resources: {}
+  restartPolicy: OnFailure
+status: {}
