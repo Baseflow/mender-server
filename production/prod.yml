@@ -82,7 +82,7 @@ services:
                     # available on, for instance if devices will access storage
                     # using https://s3.acme.org:9000, then set this to
                     # s3.acme.org
-                    - s3.baseflow.app 
+                    - s3.mender.bflow.app
         environment:
 
             # use nginx syntax for rate limiting, see
@@ -105,13 +105,13 @@ services:
             # access key, the same value as MINIO_ACCESS_KEY
             DEPLOYMENTS_AWS_AUTH_KEY: mender-deployments
             # secret, the same valie as MINIO_SECRET_KEY
-            DEPLOYMENTS_AWS_AUTH_SECRET: bai7Jahj4ieHohpu
+            DEPLOYMENTS_AWS_AUTH_SECRET: ieThubug0wae3Aet
 
             # deployments service uses signed URLs, hence it needs to access
             # storage-proxy using exactly the same name as devices will; if
             # devices will access storage using https://s3.acme.org:9000, then
             # set this to https://s3.acme.org:9000
-            DEPLOYMENTS_AWS_URI: https://s3.baseflow.app
+            DEPLOYMENTS_AWS_URI: https://s3.mender.baseflow.app:9000
         logging:
             options:
                 max-file: "10"
@@ -122,7 +122,7 @@ services:
             # access key
             MINIO_ACCESS_KEY: mender-deployments
             # secret
-            MINIO_SECRET_KEY: bai7Jahj4ieHohpu
+            MINIO_SECRET_KEY: ieThubug0wae3Aet
         volumes:
             # mounts a docker volume named `mender-artifacts` as /export directory
             - mender-artifacts:/export:rw
