@@ -1,0 +1,3 @@
+keys generated with:
+
+CERT_API_CN=mender.bflow.app CERT_STORAGE_CN=s3.mender.blowf.app ../keygen
