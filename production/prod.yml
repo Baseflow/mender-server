@@ -39,7 +39,7 @@ services:
                 max-file: "10"
                 max-size: "50m"
         environment:
-            DEVICEAUTH_MAX_DEVICES_LIMIT_DEFAULT: 15
+            DEVICEAUTH_MAX_DEVICES_LIMIT_DEFAULT: 5000
 
     mender-inventory:
         command: server --automigrate
@@ -62,14 +62,14 @@ services:
         networks:
             - mender
         volumes:
-            - ./production/keys-generated/certs/api-gateway/cert.crt:/var/www/mendersoftware/cert/cert.crt:ro
-            - ./production/keys-generated/certs/api-gateway/private.key:/var/www/mendersoftware/cert/private.key:ro
+            - /etc/letsencrypt/live/mender.bflow.app/fullchain.pem:/var/www/mendersoftware/cert/cert.crt:ro
+            - /etc/letsencrypt/live/mender.bflow.app/privkey.pem:/var/www/mendersoftware/cert/private.key:ro
         logging:
             options:
                 max-file: "10"
                 max-size: "50m"
         environment:
-            ALLOWED_HOSTS: mender.baseflow.app
+            ALLOWED_HOSTS: mender.bflow.app
 
     storage-proxy:
         ports:
@@ -93,13 +93,13 @@ services:
             DOWNLOAD_SPEED: 1m
             MAX_CONNECTIONS: 100
         volumes:
-            - ./production/keys-generated/certs/storage-proxy/cert.crt:/var/www/storage-proxy/cert/cert.crt:ro
-            - ./production/keys-generated/certs/storage-proxy/private.key:/var/www/storage-proxy/cert/private.key:ro
+            - /etc/letsencrypt/live/mender.bflow.app/fullchain.pem:/var/www/storage-proxy/cert/cert.crt:ro
+            - /etc/letsencrypt/live/mender.bflow.app/privkey.pem:/var/www/storage-proxy/cert/private.key:ro
 
     mender-deployments:
         command: server --automigrate
         volumes:
-            - ./production/keys-generated/certs/storage-proxy/cert.crt:/etc/ssl/certs/storage-proxy.crt:ro
+            - /etc/letsencrypt/live/mender.bflow.app/fullchain.pem:/etc/ssl/certs/storage-proxy.crt:ro
         environment:
             STORAGE_BACKEND_CERT: /etc/ssl/certs/storage-proxy.crt
             # access key, the same value as MINIO_ACCESS_KEY
@@ -111,7 +111,7 @@ services:
             # storage-proxy using exactly the same name as devices will; if
             # devices will access storage using https://s3.acme.org:9000, then
             # set this to https://s3.acme.org:9000
-            DEPLOYMENTS_AWS_URI: https://s3.mender.baseflow.app:9000
+            DEPLOYMENTS_AWS_URI: https://s3.mender.bflow.app:9000
         logging:
             options:
                 max-file: "10"
