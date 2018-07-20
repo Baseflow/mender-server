@@ -1,3 +1,22 @@
 keys generated with:
 
 CERT_API_CN=mender.bflow.app CERT_STORAGE_CN=s3.mender.bflow.app ../keygen
+
+
+
+
+https certificates generated with:
+
+sudo certbot certonly
+
+- then choose 'standalone'
+- domains: mender.bflow.app, s3.mender.bflow.app, molamola.mender.bflow.app, s3.molamola.mender.bflow.app
+
+view certificates:
+
+sudo certbot certificates
+
+
+renew certificates:
+
+sudo certbot renew
