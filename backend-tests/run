@@ -1,0 +1,57 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname $(readlink -f "$0"))
+INTEGRATION_PATH=$(dirname "$HERE")
+echo $INTEGRATION_PATH
+export INTEGRATION_PATH
+
+COMPOSE_CMD="docker-compose -p backend-tests \
+            -f $INTEGRATION_PATH/docker-compose.yml \
+            -f $INTEGRATION_PATH/docker-compose.storage.minio.yml \
+            -f $INTEGRATION_PATH/docker-compose.demo.yml \
+            -f $INTEGRATION_PATH/backend-tests/docker/docker-compose.backend-tests.yml"
+echo $COMPOSE_CMD
+usage() {
+    echo "runner script for backend-specific integration tests"
+    echo ""
+    echo "./backend-tests"
+    echo -e "\t-h --help"
+    echo -e "\t-c --skip-cleanup \tleave containers running after tests"
+}
+
+parse_args(){
+    while [ $# -gt 0 ]; do
+        PARAM=`echo $1 | awk -F= '{print $1}'`
+        VALUE=`echo $1 | awk -F= '{print $2}'`
+        case $PARAM in
+            -h | --help)
+            usage
+            exit
+            ;;
+            -c | --skip-cleanup)
+            SKIP_CLEANUP=1
+            ;;
+        esac
+        shift 1
+    done
+}
+
+build_backend_tests_runner() {
+    docker build -t mender-backend-tests-runner -f $INTEGRATION_PATH/backend-tests/docker/Dockerfile $INTEGRATION_PATH/backend-tests
+}
+
+run_tests() {
+    $COMPOSE_CMD run mender-backend-tests-runner || failed=1
+}
+
+cleanup(){
+    [ -z $SKIP_CLEANUP ] && $COMPOSE_CMD down && $COMPOSE_CMD rm || true
+}
+
+parse_args $*
+build_backend_tests_runner
+run_tests
+cleanup
+
+exit $failed

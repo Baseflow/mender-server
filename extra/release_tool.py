@@ -125,13 +125,14 @@ EXTRA_BUILDPARAMS = {
     "BUILD_RASPBERRYPI3": "on",
     "BUILD_VEXPRESS_QEMU": "on",
     "BUILD_VEXPRESS_QEMU_FLASH": "on",
+    "BUILD_VEXPRESS_QEMU_UBOOT_UEFI_GRUB": "on",
     "CLEAN_BUILD_CACHE": "",
     "MENDER_QA_REV": "master",
     "MENDER_STRESS_TEST_CLIENT_REV": "master",
-    "META_MENDER_REV": "rocko",
-    "META_OPENEMBEDDED_REV": "rocko",
-    "META_RASPBERRYPI_REV": "rocko",
-    "POKY_REV": "rocko",
+    "META_MENDER_REV": "sumo",
+    "META_OPENEMBEDDED_REV": "sumo",
+    "META_RASPBERRYPI_REV": "sumo",
+    "POKY_REV": "sumo",
     "PUBLISH_ARTIFACTS": "",
     "RUN_INTEGRATION_TESTS": "on",
     "STOP_SLAVE": "",
@@ -142,6 +143,7 @@ EXTRA_BUILDPARAMS = {
     "TEST_RASPBERRYPI3": "",
     "TEST_VEXPRESS_QEMU": "on",
     "TEST_VEXPRESS_QEMU_FLASH": "on",
+    "TEST_VEXPRESS_QEMU_UBOOT_UEFI_GRUB": "on",
     "TESTS_IN_PARALLEL": "6",
 }
 
@@ -323,7 +325,10 @@ def version_of(integration_dir, repo_docker, in_integration_version=None):
             else:
                 remote = ""
             data = get_docker_compose_data_for_rev(integration_dir, rev)
-            repo_range.append(remote + data[repo_docker]['version'])
+            # If the repository didn't exist in that version, just return all
+            # commits in that case, IOW no lower end point range.
+            if data.get(repo_docker) is not None:
+                repo_range.append(remote + data[repo_docker]['version'])
         return range_type.join(repo_range)
     else:
         data = get_docker_compose_data(integration_dir)
@@ -1543,15 +1548,15 @@ def do_integration_versions_including(args):
         print(match)
 
 def figure_out_checked_out_revision(state, repo_git):
-    """Finds out what is currently checked out, and returns a pair. The first
-    element is the name of what is checked out, the second is either "branch"
-    or "tag", referring to what is currently checked out. If neither a tag nor
-    branch is checked out, returns None."""
+    """Finds out what is currently checked out, and returns a list of pairs. The
+    first element is the name of what is checked out, the second is either
+    "branch" or "tag", referring to what is currently checked out. If neither a
+    tag nor branch is checked out, returns None."""
 
     try:
         ref = execute_git(None, repo_git, ["symbolic-ref", "--short", "HEAD"], capture=True, capture_stderr=True)
         # If the above didn't produce an exception, then we are on a branch.
-        return (ref, "branch")
+        return [(ref, "branch")]
     except subprocess.CalledProcessError:
         # Not a branch, fall through to below.
         pass
@@ -1576,19 +1581,18 @@ def figure_out_checked_out_revision(state, repo_git):
                                  + "the build should get rid of the problem in most cases.")
                                 % (repo_git, ref_sha, ref, checked_out_sha))
 
-            return (ref, "branch")
+            return [(ref, "branch")]
         except subprocess.CalledProcessError:
             # Not a branch. Then fall through to part below.
             pass
 
     # Not a branch checked out as a SHA either. Try tag then.
-    try:
-        ref = execute_git(None, repo_git, ["describe", "--exact", "HEAD"], capture=True, capture_stderr=True)
-    except subprocess.CalledProcessError:
+    refs = execute_git(None, repo_git, ["tag", "--points-at", "HEAD"], capture=True).split()
+    if len(refs) == 0:
         # We are not on a tag either.
         return None
 
-    return (ref, "tag")
+    return [(ref, "tag") for ref in refs]
 
 def do_verify_integration_references(args, optional_too):
     int_dir = integration_dir()
@@ -1617,14 +1621,12 @@ def do_verify_integration_references(args, optional_too):
                   % (repo.git, ", ".join(tried)))
             sys.exit(2)
 
-        rev = figure_out_checked_out_revision(None, path)
-        if rev is None:
+        revs = figure_out_checked_out_revision(None, path)
+        if revs is None:
             # Unrecognized checkout. Skip the check then.
             continue
 
-        ref, reftype = rev
-
-        if reftype == "branch" and not re.match(r"^([1-9][0-9]*\.[0-9]+\.([0-9]+|x)|master)$", ref):
+        if all([reftype == "branch" and not re.match(r"^([1-9][0-9]*\.[0-9]+\.([0-9]+|x)|master)$", ref) for ref, reftype in revs]):
             # Skip the check if the branch doesn't have a well known name,
             # either a version (with or without beta and build appendix) or
             # "master". If it does not have a well known name, then most likely
@@ -1634,9 +1636,13 @@ def do_verify_integration_references(args, optional_too):
 
         version = data[repo.docker]['version']
 
-        if ref != version:
-            print("%s: Checked out Git ref '%s' does not match tag/branch recorded in integration/*.yml: '%s' (from image tag: '%s')"
-                  % (repo.git, ref, version, repo.docker))
+        if version not in [ref for ref, reftype in revs]:
+            if len(revs) > 1:
+                checked_out = "(one of '%s')" % "', '".join([ref for ref, reftype in revs])
+            else:
+                checked_out = "'%s'" % revs[0][0]
+            print("%s: Checked out Git ref %s does not match tag/branch recorded in integration/*.yml: '%s' (from image tag: '%s')"
+                  % (repo.git, checked_out, version, repo.docker))
             problem = True
 
     if problem:
